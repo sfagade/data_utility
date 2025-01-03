@@ -2,7 +2,9 @@
 
 import click
 
-from .create_records import create
+from data_util.create_queue_records import queue_create
+
+from .create_db_records import db_create
 
 
 @click.group()
@@ -15,7 +17,8 @@ def cli() -> None:
     """Command group"""
 
 
-utility.add_command(create)
+utility.add_command(db_create)
+utility.add_command(queue_create)
 
 cli.add_command(utility)
 
