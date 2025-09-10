@@ -9,7 +9,6 @@ import pika
 from dotenv import load_dotenv
 from faker import Faker
 
-from data_util.model.kantin_models import FoodType, Franchise, Menu
 from data_util.providers.FoodTypeProvider import FoodTypeProvider
 
 logger = logging.getLogger(__name__)
@@ -40,60 +39,53 @@ def queue_create(model: str, count: int, config_file: str, dry_run: bool) -> Non
 
     faker = Faker()
 
-    if model == "franchises":
-        franchise = []
-        logger.info("Creating %s Franchises", count)
-        for _ in range(count):
-            franchise.append({"franchise_name": faker.company(), "description": faker.sentence()})
-            publish_message_to_exchange(
-                username=os.getenv("RABBITMQ_USERNAME"),
-                password=os.getenv("RABBITMQ_PASSWORD"),
-                exchange_name=os.getenv("EXCHANGE"),
-                message_body=franchise,
-                routing_key="franchises",
-                exchange_type="direct",
-                port=5672,
-                host=os.getenv("RABBITMQ_HOST"),
-                durable=True,
-            )
-        logger.info("Created %s Franchises", count)
-    elif model == "food-types":
-        logger.info("Creating %s Food Types", count)
-        fake = FoodTypeProvider()
-        food_types = []
-        for _ in range(count):
-            food_types.append({"type_name": fake.dish_type(), "description": faker.sentence()})
-            publish_message_to_exchange(
-                username=os.getenv("RABBITMQ_USERNAME"),
-                password=os.getenv("RABBITMQ_PASSWORD"),
-                exchange_name=os.getenv("EXCHANGE"),
-                message_body=food_types,
-                routing_key="food-types",
-                exchange_type="direct",
-                port=5672,
-                host=os.getenv("RABBITMQ_HOST"),
-                durable=True,
-            )
-        logger.info("Created %s Food Types", count)
-    elif model == "menus":
-        logger.info("Creating %s Menus", count)
-        menus = []
-        for _ in range(count):
-            menus.append({"menu_name": faker.company(), "description": faker.sentence()})
-            publish_message_to_exchange(
-                username=os.getenv("RABBITMQ_USERNAME"),
-                password=os.getenv("RABBITMQ_PASSWORD"),
-                exchange_name=os.getenv("EXCHANGE"),
-                message_body=menus,
-                routing_key="menus",
-                exchange_type="direct",
-                port=5672,
-                host=os.getenv("RABBITMQ_HOST"),
-                durable=True,
-            )
-        logger.info("Created %s Menus", count)
-    else:
-        logger.error("Unknown model: %s", model)
+    channel = None
+    try:
+        channel = publish_message_to_exchange(
+            username=os.getenv("RABBITMQ_USERNAME"),
+            password=os.getenv("RABBITMQ_PASSWORD"),
+            exchange_name=os.getenv("EXCHANGE"),
+            message_body=[],
+            routing_key=model,
+            exchange_type="direct",
+            port=5672,
+            host=os.getenv("RABBITMQ_HOST"),
+            durable=True,
+        )
+
+        if model == "franchises":
+            logger.info("Creating %s Franchises", count)
+            for _ in range(count):
+                channel.basic_publish(
+                    exchange=os.getenv("EXCHANGE"),
+                    routing_key=model,
+                    body=json.dumps({"franchise_name": faker.company(), "description": faker.sentence()}),
+                )
+            logger.info("Created %s Franchises", count)
+        elif model == "food-types":
+            logger.info("Creating %s Food Types", count)
+            fake = FoodTypeProvider()
+            for _ in range(count):
+                channel.basic_publish(
+                    exchange=os.getenv("EXCHANGE"),
+                    routing_key=model,
+                    body=json.dumps({"type_name": fake.dish_type(), "description": faker.sentence()}),
+                )
+            logger.info("Created %s Food Types", count)
+        elif model == "menus":
+            logger.info("Creating %s Menus", count)
+            for _ in range(count):
+                channel.basic_publish(
+                    exchange=os.getenv("EXCHANGE"),
+                    routing_key=model,
+                    body=json.dumps({"menu_name": faker.company(), "description": faker.sentence()}),
+                )
+            logger.info("Created %s Menus", count)
+        else:
+            logger.error("Unknown model: %s", model)
+    finally:
+        if channel is not None:
+            channel.close()
 
 
 def publish_message_to_exchange(
