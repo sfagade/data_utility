@@ -1,4 +1,9 @@
+import csv
+import logging
+
 from faker import Faker
+
+logger = logging.getLogger(__name__)
 
 
 class FoodTypeProvider(Faker):
@@ -41,3 +46,14 @@ class FoodTypeProvider(Faker):
 
     def ingredient(self):
         return self.random_element(elements=["Chicken", "Beef", "Lamb", "Vegetable", "Seafood"])
+
+    @staticmethod
+    def _load_list_from_csv(filename):
+        try:
+            with open(filename, "r") as file:
+                reader = csv.reader(file)
+                data = list(reader)[0]  # Assuming only one row of data
+            return data
+        except FileNotFoundError:
+            logger.error("Error: File %s not found.", filename)
+            return None
