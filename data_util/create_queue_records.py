@@ -47,7 +47,7 @@ def queue_create(model: str, count: int, config_file: str, dry_run: bool) -> Non
             exchange_name=os.getenv("EXCHANGE"),
             message_body=[],
             routing_key=model,
-            exchange_type="direct",
+            exchange_type="topic",
             port=5672,
             host=os.getenv("RABBITMQ_HOST"),
             durable=True,
