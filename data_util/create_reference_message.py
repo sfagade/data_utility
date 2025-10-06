@@ -20,6 +20,17 @@ MODEL_FOOD_TYPES = "food-types"
 MODEL_MENUS = "menus"
 
 
+def _create_person_message(faker: Faker) -> dict[str, str]:
+    """Create a person message body."""
+    return {
+        "first_name": faker.first_name(),
+        "last_name": faker.last_name(),
+        "email": faker.email(),
+        "date_of_birth": faker.date_of_birth().isoformat(),
+        "gender": faker.passport_gender(),
+    }
+
+
 def _create_franchise_message(faker: Faker) -> dict[str, str]:
     """Create a franchise message body."""
     return {"franchise_name": faker.company(), "description": faker.sentence()}
