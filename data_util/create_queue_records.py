@@ -20,6 +20,17 @@ MODEL_FOOD_TYPES = "food-types"
 MODEL_MENUS = "menus"
 
 
+def _create_person_message(faker: Faker) -> dict[str, str]:
+    """Create a person message body."""
+    return {
+        "first_name": faker.first_name(),
+        "last_name": faker.last_name(),
+        "email": faker.email(),
+        "date_of_birth": faker.date_of_birth().isoformat(),
+        "gender": faker.passport_gender(),
+    }
+
+
 def _create_franchise_message(faker: Faker) -> dict[str, str]:
     """Create a franchise message body."""
     return {"franchise_name": faker.company(), "description": faker.sentence()}
@@ -36,11 +47,11 @@ def _create_menu_message(faker: Faker) -> dict[str, str]:
 
 
 def _publish_messages_for_model(
-        channel: pika.channel.Channel,
-        model: str,
-        count: int,
-        faker: Faker,
-        exchange: str,
+    channel: pika.channel.Channel,
+    model: str,
+    count: int,
+    faker: Faker,
+    exchange: str,
 ) -> None:
     """Publish messages for a specific model type."""
     if model == MODEL_FRANCHISES:
