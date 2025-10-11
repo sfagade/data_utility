@@ -2,8 +2,8 @@
 
 import click
 
-from data_util.create_people_messages import queue_person_create
-from data_util.create_queue_records import queue_create
+from data_util.create_actor_messages import queue_person_create
+from data_util.create_reference_message import queue_create
 
 from .create_db_records import db_create
 
