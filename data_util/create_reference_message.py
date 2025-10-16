@@ -3,13 +3,13 @@ import logging
 import os
 import sys
 import time
-from typing import Any
 
 import click
 import pika
 from dotenv import load_dotenv
 from faker import Faker
 
+from data_util.connections.rabbit_connection import publish_message_to_exchange
 from data_util.providers.FoodTypeProvider import FoodTypeProvider
 
 logger = logging.getLogger(__name__)
@@ -36,11 +36,11 @@ def _create_menu_message(faker: Faker) -> dict[str, str]:
 
 
 def _publish_messages_for_model(
-        channel: pika.channel.Channel,
-        model: str,
-        count: int,
-        faker: Faker,
-        exchange: str,
+    channel: pika.channel.Channel,
+    model: str,
+    count: int,
+    faker: Faker,
+    exchange: str,
 ) -> None:
     """Publish messages for a specific model type."""
     if model == MODEL_FRANCHISES:
@@ -94,6 +94,23 @@ def _publish_messages_for_model(
     help="When true messages are sent periodically for the number of count.",
 )
 def queue_create(model: str, count: int, config_file: str, periodic_run: bool) -> None:
+    """
+    Publish messages for a specific model type.
+
+    Usage:
+    queue-create [OPTIONS] MODEL COUNT
+
+    MODEL should be one of:
+    - franchises
+    - food-types
+    - menus
+
+    COUNT is the number of records to create.
+
+    Options:
+    -c, --config-file FILE  Choose a config file to load environment variables from.
+    -p, --periodic-run            When true messages are sent periodically for the number of count.
+    """
     logger.info("Command: %s", " ".join(sys.argv))
     if config_file:
         load_dotenv(config_file)
@@ -102,17 +119,7 @@ def queue_create(model: str, count: int, config_file: str, periodic_run: bool) -
     faker = Faker()
     channel = None
     try:
-        channel = publish_message_to_exchange(
-            username=os.getenv("RABBITMQ_USERNAME"),
-            password=os.getenv("RABBITMQ_PASSWORD"),
-            exchange_name=os.getenv("EXCHANGE"),
-            message_body=[],
-            routing_key=model,
-            exchange_type="topic",
-            port=5672,
-            host=os.getenv("RABBITMQ_HOST"),
-            durable=True,
-        )
+        channel = publish_message_to_exchange(config_file=config_file)
 
         exchange = os.getenv("EXCHANGE")
 
@@ -125,26 +132,3 @@ def queue_create(model: str, count: int, config_file: str, periodic_run: bool) -
     finally:
         if channel is not None:
             channel.close()
-
-
-def publish_message_to_exchange(
-    username: str,
-    password: str,
-    exchange_name: str,
-    message_body: list[Any],
-    routing_key: str,
-    **kw: Any,
-) -> pika.channel.Channel:
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=kw.get("host"),
-            port=kw.get("port"),
-            credentials=pika.PlainCredentials(username, password),
-        )
-    )
-    # Create a channel
-    channel = connection.channel()
-    channel.exchange_declare(exchange=exchange_name, exchange_type=kw.get("exchange_type"), durable=kw.get("durable"))
-    if len(message_body) > 0:
-        channel.basic_publish(exchange=exchange_name, routing_key=routing_key, body=json.dumps(message_body))
-    return channel
