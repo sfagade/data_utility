@@ -1,7 +1,10 @@
+import logging
 import os
 
 import pika
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 
 def publish_message_to_exchange(config_file: str = None) -> pika.channel.Channel:
@@ -19,21 +22,25 @@ def publish_message_to_exchange(config_file: str = None) -> pika.channel.Channel
     else:
         load_dotenv()
 
-    username = (os.getenv("RABBITMQ_USERNAME"))
-    password = (os.getenv("RABBITMQ_PASSWORD"))
-    exchange_name = (os.getenv("ACTOR_EXCHANGE"))
+    username = os.getenv("RABBITMQ_USERNAME")
+    password = os.getenv("RABBITMQ_PASSWORD")
+    exchange_name = os.getenv("ACTOR_EXCHANGE")
     exchange_type = "topic"
     port = 5672
     host = os.getenv("RABBITMQ_HOST")
-    durable = True,
+    durable = True
 
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(
-            host=host,
-            port=port,
-            credentials=pika.PlainCredentials(username, password),
+    try:
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=host,
+                port=port,
+                credentials=pika.PlainCredentials(username, password),
+            )
         )
-    )
-    channel = connection.channel()
-    channel.exchange_declare(exchange=exchange_name, exchange_type=exchange_type, durable=durable)
-    return channel
+        channel = connection.channel()
+        channel.exchange_declare(exchange=exchange_name, exchange_type=exchange_type, durable=durable)
+        return channel
+    except Exception as e:
+        logger.error("Failed to connect to RabbitMQ: %s", e)
+        raise
