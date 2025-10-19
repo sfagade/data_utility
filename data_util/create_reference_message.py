@@ -108,8 +108,8 @@ def queue_create(model: str, count: int, config_file: str, periodic_run: bool) -
     COUNT is the number of records to create.
 
     Options:
-    -c, --config-file FILE  Choose a config file to load environment variables from.
-    -p, --periodic-run            When true messages are sent periodically for the number of count.
+    -c, --config-file FILE Choose a config file to load environment variables from.
+    -p, --periodic-run When true messages are sent periodically for the number of count.
     """
     logger.info("Command: %s", " ".join(sys.argv))
     if config_file:
